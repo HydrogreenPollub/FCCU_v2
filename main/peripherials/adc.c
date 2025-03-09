@@ -147,6 +147,7 @@ void adc_on_loop()
     // Apply calibration curves
     V_FC_value = adc_apply_calibration(adc_60v_coefficients, ADC_60V_VOLTAGE_COEFF_COUNT, V_FC_filtered_raw);
     T_value = adc_apply_calibration(adc_temperature_coeffs, ADC_TEMPERATURE_COEFF_COUNT, T_filtered_raw);
+    printf("%f\n", T_value);
     P_value = adc_apply_calibration(adc_3v3_coeffs, ADC_3V3_VOLTAGE_COEFF_COUNT, P_filtered_raw);
     previous_button_state_value = button_state_value;
     button_state_value = adc_apply_calibration(adc_3v3_coeffs, ADC_3V3_VOLTAGE_COEFF_COUNT, button_state_filtered_raw);

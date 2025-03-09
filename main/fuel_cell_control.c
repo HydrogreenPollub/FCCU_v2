@@ -2,7 +2,7 @@
 #include "adc.h"
 #include "pwm.h"
 #include "gpio.h"
-#include "nwm.h"
+#include "timer.h"
 
 // Start value
 bool main_valve = 0;  // ================= ustawienie zaworu zasilajacego _ main valve n-mosfet (1 on, 0 off)
@@ -27,12 +27,14 @@ void fc_purge()
         {
             case 0:
                 gpio_set_level(PURGE_VALVE_PIN, 1);
+                printf("%lld\t%d\n", get_millis(), purge_step);
                 purge_step++;
-                purge_timer = millis();
+                purge_timer = get_millis();
                 break;
             case 1:
-                if (purge_timer > PURGE_DURATION_MS)
+                if (get_millis() - purge_timer >= PURGE_DURATION_MS)
                 {
+                    printf("%lld\t%d\n", get_millis(), purge_step);
                     gpio_set_level(PURGE_VALVE_PIN, 0);
                     purge_step++;
                     purge_timer = get_millis();
@@ -40,20 +42,23 @@ void fc_purge()
                 }
                 break;
             case 2:
-                if (purge_timer > PURGE_MOSFET_DELAY_MS)
+                if (get_millis() - purge_timer >= PURGE_MOSFET_DELAY_MS)
                 {
+                    printf("%lld\t%d\n", get_millis(), purge_step);
                     gpio_set_level(PURGE_VALVE_PIN, 0);
                     gpio_set_level(MOSFET_PIN, 1);
                     purge_step++;
                     purge_timer = get_millis();
+                    pwm_set_current_control_duty_cycle(0);
                     // return;
                 }
                 break;
             case 3:
             case 5:
             case 7:
-                if (purge_timer > MOSFET_SHORT_DURATION_MS)
+                if (get_millis() - purge_timer >= MOSFET_SHORT_DURATION_MS)
                 {
+                    printf("%lld\t%d\n", get_millis(), purge_step);
                     gpio_set_level(MOSFET_PIN, 0);
                     purge_step++;
                     purge_timer = get_millis();
@@ -61,18 +66,21 @@ void fc_purge()
                 break;
             case 4:
             case 6:
-                if (purge_timer > MOSFET_SHORT_INTERVAL_MS)
+                if (get_millis() - purge_timer >= MOSFET_SHORT_INTERVAL_MS)
                 {
-                    gpio_set_level(MOSFET_PIN, 0);
+                    printf("%lld\t%d\n", get_millis(), purge_step);
+                    gpio_set_level(MOSFET_PIN, 1);
                     purge_step++;
                     purge_timer = get_millis();
                 }
                 break;
             default:
+                printf("%lld\t%d\n", get_millis(), purge_step);
                 gpio_set_level(MOSFET_PIN, 0);
                 gpio_set_level(PURGE_VALVE_PIN, 0);
                 purge_step = 0;
                 purge_in_process = 0;
+                pwm_set_current_control_duty_cycle(100);
                 break;
         }
     }
@@ -166,6 +174,7 @@ void fc_on_loop()
             main_valve = 0;
             fan_gnd_duty_cycle_percent = 0;
             fan_PWM_duty_cycle_percent = 0;
+            printf("main off\n");
             gpio_set_level(MAIN_VALVE_PIN, 0);
         }
         else
@@ -174,8 +183,9 @@ void fc_on_loop()
             fan_gnd_duty_cycle_percent = 100;
             fan_PWM_duty_cycle_percent = 100;
             gpio_set_level(MAIN_VALVE_PIN, 1);
+            printf("main on\n");
         }
-        fan_toggle = !fan_toggle;
+        // fan_toggle = !fan_toggle;
     }
     else
     {
@@ -204,6 +214,15 @@ void fc_on_loop()
         pwm_set_pwm_duty_cycle(fan_PWM_duty_cycle_percent);
         pwm_set_gnd_duty_cycle(fan_gnd_duty_cycle_percent);
     }
+
+    /* if (T_value > 70)
+     {
+         fan_gnd_duty_cycle_percent = 0;
+         fan_PWM_duty_cycle_percent = 0;
+         gpio_set_level(MAIN_VALVE_PIN, 0);
+         gpio_set_level(PURGE_VALVE_PIN, 0);
+         gpio_set_level(MOSFET_PIN, 0);
+     }*/
 
     fc_purge();
 }
