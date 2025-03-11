@@ -31,12 +31,14 @@
 #define ADC_T_CHANNEL            ADC_CHANNEL_1 // GPIO 2, ADC 1 CH 1
 #define ADC_P_CHANNEL            ADC_CHANNEL_2 // GPIO 3, ADC 1 CH 2
 #define ADC_BUTTON_STATE_CHANNEL ADC_CHANNEL_2 // I/O 4 -- GPIO 13 ADC 2 CH 2
+#define ADC_CURRENT_FLOW_CHANNEL ADC_CHANNEL_4 // GPIO 5, ADC1 CH 4
 // #define ADC_MCU_TEST_CHANNEL   ADC_CHANNEL_1 // MCU test GPIO 1, ADC 1 CH 0
 
-#define ADC_V_FC_SAMPLES_COUNT   32
-#define ADC_T_SAMPLES_COUNT      32
-#define ADC_P_SAMPLES_COUNT      32
-#define ADC_BUTTON_SAMPLES_COUNT 1
+#define ADC_V_FC_SAMPLES_COUNT         32
+#define ADC_T_SAMPLES_COUNT            32
+#define ADC_P_SAMPLES_COUNT            32
+#define ADC_BUTTON_SAMPLES_COUNT       1
+#define ADC_CURRENT_FLOW_SAMPLES_COUNT 1
 
 #define ADC_60V_VOLTAGE_COEFF_COUNT 11
 #define ADC_3V3_VOLTAGE_COEFF_COUNT 11
@@ -50,6 +52,10 @@ extern float T_value;
 
 extern float P_filtered_raw;
 extern float P_value;
+
+extern int current_flow_raw;
+extern float current_flow_filtered_raw;
+extern float current_flow_value;
 
 extern float button_state_filtered_raw;
 extern float previous_button_state_filtered_raw;

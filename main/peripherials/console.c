@@ -58,13 +58,14 @@ void console_parse_command(commands_t command)
 
 void console_print_logs()
 {
-    /*sprintf((char*) buffer_tx,
+    sprintf((char*) buffer_tx,
+        "%2.3f,\t"
         "%2.3f,\t"
         "%2.3f,\t"
         "%2.3f,\t"
         "%2.3f,\t"
         "%2.3f\n\r",
-        V_FC_filtered_raw, V_FC_value, T_value, P_value, button_state_value);*/
+        V_FC_filtered_raw, V_FC_value, T_value, P_value, button_state_value, current_flow_value);
 
     // uart_write_bytes(CONSOLE_UART_NUM, (const char*) buffer_tx, strlen((char*) buffer_tx));
     // printf((const char*) buffer_tx);

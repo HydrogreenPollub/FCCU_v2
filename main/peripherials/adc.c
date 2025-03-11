@@ -61,6 +61,7 @@ ring_buffer_t rb_V_FC;
 ring_buffer_t rb_T;
 ring_buffer_t rb_P;
 ring_buffer_t rb_button_state;
+ring_buffer_t rb_current_flow;
 
 int V_FC_raw = 0;
 float V_FC_filtered_raw = 0;
@@ -82,6 +83,10 @@ float previous_button_state_value = 0;
 
 bool button_state = 0;
 bool previous_button_state = 0;
+
+int current_flow_raw = 0;
+float current_flow_filtered_raw = 0;
+float current_flow_value = 0;
 
 float adc_map(float x, float in_min, float in_max, float out_min, float out_max)
 {
@@ -130,12 +135,13 @@ void adc_on_loop()
     adc_oneshot_read(adc1_handle, ADC_T_CHANNEL, &T_raw);
     adc_oneshot_read(adc1_handle, ADC_P_CHANNEL, &P_raw);
     adc_oneshot_read(adc2_handle, ADC_BUTTON_STATE_CHANNEL, &button_state_raw);
-
+    adc_oneshot_read(adc1_handle, ADC_CURRENT_FLOW_CHANNEL, &current_flow_raw);
     // Add new sample to the ring buffer
     ring_buffer_enqueue(&rb_V_FC, V_FC_raw);
     ring_buffer_enqueue(&rb_T, T_raw);
     ring_buffer_enqueue(&rb_P, P_raw);
     ring_buffer_enqueue(&rb_button_state, button_state_raw);
+    ring_buffer_enqueue(&rb_current_flow, current_flow_raw);
 
     // Apply filter to the ring buffer
     V_FC_filtered_raw = adc_apply_filter(&rb_V_FC);
@@ -143,6 +149,7 @@ void adc_on_loop()
     P_filtered_raw = adc_apply_filter(&rb_P);
     previous_button_state_filtered_raw = button_state_filtered_raw;
     button_state_filtered_raw = adc_apply_filter(&rb_button_state);
+    current_flow_filtered_raw = adc_apply_filter(&rb_current_flow);
 
     // Apply calibration curves
     V_FC_value = adc_apply_calibration(adc_60v_coefficients, ADC_60V_VOLTAGE_COEFF_COUNT, V_FC_filtered_raw);
@@ -151,21 +158,10 @@ void adc_on_loop()
     P_value = adc_apply_calibration(adc_3v3_coeffs, ADC_3V3_VOLTAGE_COEFF_COUNT, P_filtered_raw);
     previous_button_state_value = button_state_value;
     button_state_value = adc_apply_calibration(adc_3v3_coeffs, ADC_3V3_VOLTAGE_COEFF_COUNT, button_state_filtered_raw);
+    current_flow_value = current_flow_filtered_raw;
 
     // Map to physical values if necessary
     P_value = adc_map(P_value, 0, 2.995, 0, 300); // Pressure: 0-3 V => 0-300 bar
-
-    // TODO move to separate function
-    // zbocze narastajace
-    /*if (button_state_value - previous_button_state_value >= 0.5)
-    {
-        button_state = true;
-    }
-    else
-    {
-        button_state = false;
-    }
-    previous_button_state_value = button_state_value;*/
 }
 
 void adc_init()
@@ -191,9 +187,12 @@ void adc_init()
     adc_oneshot_config_channel(adc1_handle, ADC_CHANNEL_1, &config);
     adc_oneshot_config_channel(adc1_handle, ADC_CHANNEL_2, &config);
     adc_oneshot_config_channel(adc1_handle, ADC_CHANNEL_0, &config);
+    adc_oneshot_config_channel(adc1_handle, ADC_CHANNEL_4, &config);
 
     ring_buffer_init(&rb_V_FC, buffer_V_FC, ADC_V_FC_SAMPLES_COUNT);
     ring_buffer_init(&rb_T, buffer_T, ADC_T_SAMPLES_COUNT);
     ring_buffer_init(&rb_P, buffer_P, ADC_P_SAMPLES_COUNT);
     ring_buffer_init(&rb_button_state, buffer_button_state, ADC_BUTTON_SAMPLES_COUNT);
+
+    ring_buffer_init(&rb_button_state, buffer_button_state, ADC_CURRENT_FLOW_SAMPLES_COUNT);
 }
