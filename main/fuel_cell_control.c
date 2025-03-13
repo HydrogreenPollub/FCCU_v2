@@ -214,6 +214,7 @@ void fc_on_loop()
         pwm_set_pwm_duty_cycle(fan_PWM_duty_cycle_percent);
         pwm_set_gnd_duty_cycle(fan_gnd_duty_cycle_percent);
     }
+    pwm_set_gnd_duty_cycle(50);
 
     /* if (T_value > 70)
      {

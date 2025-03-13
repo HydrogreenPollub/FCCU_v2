@@ -68,7 +68,7 @@ void console_print_logs()
         V_FC_filtered_raw, V_FC_value, T_value, P_value, button_state_value, current_flow_value);
 
     // uart_write_bytes(CONSOLE_UART_NUM, (const char*) buffer_tx, strlen((char*) buffer_tx));
-    // printf((const char*) buffer_tx);
+    printf((const char*) buffer_tx);
 }
 
 void console_tx_task(void* pvParameters)
@@ -92,7 +92,7 @@ void console_tx_task(void* pvParameters)
         //     led_state = true;
         // }
 
-        vTaskDelay(50 / portTICK_PERIOD_MS);
+        vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 }
 

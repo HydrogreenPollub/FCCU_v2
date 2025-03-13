@@ -49,6 +49,12 @@ float adc_temperature_coeffs[ADC_TEMPERATURE_COEFF_COUNT] = {
     5.9176370002593397e-002,
 };
 
+float adc_current_flow_coeffs[ADC_CURRENT_FLOW_COEFF_COUNT] = {
+    11.9051787046,
+    -1.19775806e-002,
+    2.442e-007,
+};
+
 adc_oneshot_unit_handle_t adc1_handle;
 adc_oneshot_unit_handle_t adc2_handle;
 
@@ -56,6 +62,7 @@ uint16_t buffer_V_FC[ADC_V_FC_SAMPLES_COUNT];
 uint16_t buffer_T[ADC_T_SAMPLES_COUNT];
 uint16_t buffer_P[ADC_P_SAMPLES_COUNT];
 uint16_t buffer_button_state[ADC_BUTTON_SAMPLES_COUNT];
+uint16_t buffer_current_flow[ADC_CURRENT_FLOW_SAMPLES_COUNT];
 
 ring_buffer_t rb_V_FC;
 ring_buffer_t rb_T;
@@ -154,14 +161,16 @@ void adc_on_loop()
     // Apply calibration curves
     V_FC_value = adc_apply_calibration(adc_60v_coefficients, ADC_60V_VOLTAGE_COEFF_COUNT, V_FC_filtered_raw);
     T_value = adc_apply_calibration(adc_temperature_coeffs, ADC_TEMPERATURE_COEFF_COUNT, T_filtered_raw);
-    printf("%f\n", T_value);
+    // printf("%f\n", T_value);
     P_value = adc_apply_calibration(adc_3v3_coeffs, ADC_3V3_VOLTAGE_COEFF_COUNT, P_filtered_raw);
     previous_button_state_value = button_state_value;
     button_state_value = adc_apply_calibration(adc_3v3_coeffs, ADC_3V3_VOLTAGE_COEFF_COUNT, button_state_filtered_raw);
-    current_flow_value = current_flow_filtered_raw;
+    current_flow_value
+        = adc_apply_calibration(adc_current_flow_coeffs, ADC_CURRENT_FLOW_COEFF_COUNT, current_flow_filtered_raw);
 
     // Map to physical values if necessary
     P_value = adc_map(P_value, 0, 2.995, 0, 300); // Pressure: 0-3 V => 0-300 bar
+    vTaskDelay(100 / portTICK_PERIOD_MS);
 }
 
 void adc_init()
@@ -194,5 +203,5 @@ void adc_init()
     ring_buffer_init(&rb_P, buffer_P, ADC_P_SAMPLES_COUNT);
     ring_buffer_init(&rb_button_state, buffer_button_state, ADC_BUTTON_SAMPLES_COUNT);
 
-    ring_buffer_init(&rb_button_state, buffer_button_state, ADC_CURRENT_FLOW_SAMPLES_COUNT);
+    ring_buffer_init(&rb_current_flow, buffer_current_flow, ADC_CURRENT_FLOW_SAMPLES_COUNT);
 }
