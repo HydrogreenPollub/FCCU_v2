@@ -36,11 +36,11 @@
 
 // frequncy of clock (each tick)
 // 2.5 MHz -> 40 ns
-#define PWM_TIMEBASE_RESOLUTION_HZ 25000 /*25000000*/ // ------------Sprawdzić oscyloskopem
+#define PWM_TIMEBASE_RESOLUTION_HZ 25000000 /*25000000*/ // ------------Sprawdzić oscyloskopem
 
 // number of ticks in each period
 // 100 ticks, 40 us;
-#define PWM_TIMEBASE_PERIOD 2500 /*1000*/
+#define PWM_TIMEBASE_PERIOD 1000
 
 // Fans PWM start filling (%)
 extern int fan_gnd_duty_cycle_percent;

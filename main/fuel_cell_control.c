@@ -195,16 +195,16 @@ void fc_on_loop()
             purge_in_process = 1;
         }
     }
-
+    fan_toggle = 1;
     if (fan_toggle == 1)
     {
         if (T_value > 55)
         {
             fan_PWM_duty_cycle_percent = (int) (T_value * 1.5);
         }
-        else if (T_value > 20)
+        else if (T_value > 40)
         {
-            fan_PWM_duty_cycle_percent = T_value - 10; // T_value /*_average - (-30) /*10; // If you have simple 2 wire
+            fan_PWM_duty_cycle_percent = T_value - 10; // T_value _average - (-30) 10; // If you have simple 2 wire
         }
         else
         {
@@ -212,12 +212,24 @@ void fc_on_loop()
         }
 
         pwm_set_pwm_duty_cycle(fan_PWM_duty_cycle_percent);
-        pwm_set_gnd_duty_cycle(fan_gnd_duty_cycle_percent);
+        pwm_set_gnd_duty_cycle(100);
     }
-    pwm_set_gnd_duty_cycle(50);
+    // pwm_set_gnd_duty_cycle(100);
 
+    /* for (int i = 0; i <= 100; i++)
+     {
+         pwm_set_pwm_duty_cycle(100 * i % 2);
+         vTaskDelay(5000 / portTICK_PERIOD_MS);
+     }*/
+    /* for (int i = 0; i < 100; i++)
+     {
+         pwm_set_pwm_duty_cycle(i);
+         vTaskDelay(1000 / portTICK_PERIOD_MS);
+     }*/
+    // pwm_set_pwm_duty_cycle(75);
     /* if (T_value > 70)
      {
+    0
          fan_gnd_duty_cycle_percent = 0;
          fan_PWM_duty_cycle_percent = 0;
          gpio_set_level(MAIN_VALVE_PIN, 0);

@@ -20,6 +20,7 @@
 #include "gpio.h"
 #include "pwm.h"
 #include "console.h"
+#include "can.h"
 
 #include "fuel_cell_control.h"
 
@@ -31,14 +32,16 @@ void app_main()
     gpio_init();
     adc_init();
     pwm_init();
-    console_init();
+    can_initialize();
+    // console_init();
     // temp
     // pwm_set_pwm_duty_cycle(0);
     while (1)
     {
         adc_on_loop();
         fc_on_loop();
-
+        can_send();
+        // can_recieve();
         vTaskDelay(10 / portTICK_PERIOD_MS);
     }
 }
