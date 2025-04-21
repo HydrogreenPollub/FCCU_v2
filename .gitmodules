@@ -1,0 +1,6 @@
+[submodule "can_ids"]
+	path = can_ids
+	url = https://github.com/HydrogreenPollub/can_ids
+[submodule "main/peripherials/can_ids"]
+	path = main/peripherials/can_ids
+	url = https://github.com/HydrogreenPollub/can_ids
