@@ -33,6 +33,7 @@ void app_main()
     adc_init();
     pwm_init();
     can_initialize();
+    uart_init();
     // console_init();
     // temp
     // pwm_set_pwm_duty_cycle(0);
@@ -41,6 +42,7 @@ void app_main()
         adc_on_loop();
         fc_on_loop();
         can_send();
+        uart_echo();
         // can_recieve();
         vTaskDelay(10 / portTICK_PERIOD_MS);
     }

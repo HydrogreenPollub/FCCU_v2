@@ -54,8 +54,8 @@ void can_send()
         .self = 0,         // Whether the message is a self reception request (loopback)
         .dlc_non_comp = 0, // DLC is less than 8
         // Message ID and payload
-        .identifier = 0xAAAA,
-        .data_length_code = 4,
+        .identifier = CAN_ID_FUEL_CELL_TEMPERATURE,
+        .data_length_code = 2,
         .data = { 0, 1, 2, 3 },
     };
 
