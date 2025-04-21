@@ -12,6 +12,7 @@
 
 // #include "global.h"
 #include "can.h"
+#include "can_ids/can_ids.h"
 
 void can_initialize()
 {
