@@ -1,74 +1,67 @@
-#include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "driver/uart.h"
-#include "driver/gpio.h"
-#include "sdkconfig.h"
-#include "esp_log.h"
-
 #include "uart.h"
+#include "driver/uart.h"
+#include "esp_log.h"
+#include <stdlib.h>
 
-#define ECHO_TEST_TXD (CONFIG_EXAMPLE_UART_TXD)
-#define ECHO_TEST_RXD (CONFIG_EXAMPLE_UART_RXD)
-#define ECHO_TEST_RTS (UART_PIN_NO_CHANGE)
-#define ECHO_TEST_CTS (UART_PIN_NO_CHANGE)
+#define UART_PORT_NUM    UART_NUM_1
+#define UART_BAUD_RATE   115200
+#define UART_TX_PIN      17
+#define UART_RX_PIN      18
+#define UART_BUFFER_SIZE 1024
 
-#define ECHO_UART_PORT_NUM   (CONFIG_EXAMPLE_UART_PORT_NUM)
-#define ECHO_UART_BAUD_RATE  (CONFIG_EXAMPLE_UART_BAUD_RATE)
-#define ECHO_TASK_STACK_SIZE (CONFIG_EXAMPLE_TASK_STACK_SIZE)
+static const char* TAG = "UART";
 
-static const char* TAG = "UART TEST";
-
-void uart_init(void* arg)
+void uart_init(void)
 {
-    uart_config_t uart_config = {
-        .baud_rate = UART_BAUD_RATE,
+    uart_config_t uart_config = { .baud_rate = UART_BAUD_RATE,
         .data_bits = UART_DATA_8_BITS,
         .parity = UART_PARITY_DISABLE,
         .stop_bits = UART_STOP_BITS_1,
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-        .source_clk = UART_SCLK_DEFAULT,
-    };
-    int intr_alloc_flags = 0;
-
-#if CONFIG_UART_ISR_IN_IRAM
-    intr_alloc_flags = ESP_INTR_FLAG_IRAM;
-#endif
-
-    const int uart_buffer_size = (1024 * 2);
-    QueueHandle_t uart_queue;
-    ESP_ERROR_CHECK(uart_driver_install(UART_PORT_NUM, uart_buffer_size, uart_buffer_size, 10, &uart_queue,
-        intr_alloc_flags)); // with event queue
-    // ESP_ERROR_CHECK(uart_driver_install(UART_PORT_NUM, BUF_SIZE * 2, 0, 0, NULL, intr_alloc_flags)); // simple, no
-    // queue, no buffer install, og. from echo
+        .source_clk = UART_SCLK_DEFAULT };
     ESP_ERROR_CHECK(uart_param_config(UART_PORT_NUM, &uart_config));
-    ESP_ERROR_CHECK(uart_set_pin(UART_PORT_NUM, UART_TXD, UART_RXD, UART_RTS, UART_CTS));
+    ESP_ERROR_CHECK(uart_set_pin(UART_PORT_NUM, UART_TX_PIN, UART_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
+    ESP_ERROR_CHECK(uart_driver_install(UART_PORT_NUM, UART_BUFFER_SIZE * 2, UART_BUFFER_SIZE * 2, 0, NULL, 0));
+    ESP_LOGI(TAG, "UART%d initialized at %d baud", UART_PORT_NUM, UART_BAUD_RATE);
 }
 
-void uart_send(uint8_t* uart_message)
+int uart_send_data(const char* data, size_t length)
 {
-    uart_write_bytes(uart_num, (const char*) uart_message, strlen(test_str));
+    int bytes = uart_write_bytes(UART_PORT_NUM, data, length);
+    ESP_LOGI(TAG, "uart_send_data: sent %d bytes", bytes);
+    return bytes;
 }
 
-int uart_receive(uint8_t* uart_message)
+int uart_receive_data(uint8_t* buffer, size_t length, TickType_t timeout)
 {
-    // const uart_port_t uart_num = UART_NUM_2;
-    // uint8_t data[128];
-    int length = 0;
-    ESP_ERROR_CHECK(uart_get_buffered_data_len(UART_PORT_NUM, (size_t*) &length));
-    length = uart_read_bytes(UART_PORT_NUM, uart_message, length, 100);
-    return length;
-}
-
-void uart_echo()
-{
-    uint8_t* data = (uint8_t*) malloc(BUF_SIZE);
-    int len = uart_read_bytes(UART_PORT_NUM, data, (BUF_SIZE - 1), 20 / portTICK_PERIOD_MS);
-    // Write data back to the UART
-    uart_write_bytes(UART_PORT_NUM, (const char*) data, len);
-    if (len)
+    int bytes = uart_read_bytes(UART_PORT_NUM, buffer, length, timeout);
+    if (bytes > 0)
     {
-        data[len] = '\0';
-        ESP_LOGI(TAG, "Recv str: %s", (char*) data);
+        ESP_LOGI(TAG, "uart_receive_data: received %d bytes", bytes);
     }
+    printf("%s \n", buffer);
+    return bytes;
+}
+
+void uart_echo_task(void* arg)
+{
+    uint8_t* data = malloc(UART_BUFFER_SIZE);
+    if (!data)
+    {
+        ESP_LOGE(TAG, "Failed to allocate memory for echo buffer");
+        vTaskDelete(NULL);
+        return;
+    }
+
+    while (1)
+    {
+        int len = uart_receive_data(data, UART_BUFFER_SIZE, pdMS_TO_TICKS(1000));
+        if (len > 0)
+        {
+            uart_send_data((const char*) data, len);
+        }
+    }
+
+    free(data);
+    vTaskDelete(NULL);
 }

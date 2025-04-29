@@ -20,7 +20,9 @@
 #include "gpio.h"
 #include "pwm.h"
 #include "console.h"
+#include "timer.h"
 #include "can.h"
+#include "uart.h"
 
 #include "fuel_cell_control.h"
 
@@ -32,18 +34,23 @@ void app_main()
     gpio_init();
     adc_init();
     pwm_init();
-    can_initialize();
-    uart_init();
-    // console_init();
-    // temp
-    // pwm_set_pwm_duty_cycle(0);
+    can_init();
+    // uart_init();
+    //  console_init();
+    //  temp
+    //  pwm_set_pwm_duty_cycle(0);
     while (1)
     {
         adc_on_loop();
         fc_on_loop();
-        can_send();
-        uart_echo();
-        // can_recieve();
+        // can_send();
+        //   const char* testText = "brumbrum";
+        //   uart_send_data(testText, 8);
+        //   uint8_t buffer[8];
+        //   size_t length = 8;
+        //   TickType_t timeout = 100;
+        //   uart_receive_data(buffer, length, timeout);
+        //  can_recieve();
         vTaskDelay(10 / portTICK_PERIOD_MS);
     }
 }

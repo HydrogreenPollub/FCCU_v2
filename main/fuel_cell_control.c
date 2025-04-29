@@ -5,13 +5,15 @@
 #include "timer.h"
 
 // Start value
-bool main_valve = 0;  // ================= ustawienie zaworu zasilajacego _ main valve n-mosfet (1 on, 0 off)
-bool purge_valve = 0; // ================= ustawienie przedmuchu - purge valve n-mosfet (1 on, 0 off)
-bool mosfet = 0;      // ================= ustawienie zwarcia mosfet - driver i n-mosfet (1 on, 0 off)
+bool main_valve_toggle = 0; // ================= ustawienie zaworu zasilajacego _ main valve n-mosfet (1 on, 0 off)
+bool purge_valve = 0;       // ================= ustawienie przedmuchu - purge valve n-mosfet (1 on, 0 off)
+bool mosfet_toggle = 0;     // ================= ustawienie zwarcia mosfet - driver i n-mosfet (1 on, 0 off)
+bool fc_on = 0;
+bool fan_toggle_trigger = 0;
 
-// Control
-// int START_V = 3000;
-// int PURGE_V = 1000;
+float FC_V_buffer[FC_V_PROBING_TIME * FC_V_PROBING_FREQUENCY] = { 0 };
+uint64_t FC_V_probing_timer;
+int FC_V_buffer_current_idx = 0;
 
 bool fan_toggle = 0;
 bool purge_in_process = 0;
@@ -19,8 +21,26 @@ int purge_step = 0;
 
 uint64_t purge_timer;
 
+void fc_init()
+{
+    for (int i = 0; i < FC_V_PROBING_TIME * FC_V_PROBING_FREQUENCY; i++)
+    {
+        FC_V_buffer[i] = 0;
+    }
+    purge_timer = get_millis();
+    FC_V_probing_timer = get_millis();
+}
+
 void fc_purge()
 {
+    if (get_millis() - FC_V_probing_timer > 1000.0 / FC_V_PROBING_FREQUENCY)
+    {
+        FC_V_buffer[FC_V_buffer_current_idx] = V_FC_value;
+        FC_V_buffer_current_idx++;
+        FC_V_buffer_current_idx %= (FC_V_PROBING_FREQUENCY * FC_V_PROBING_TIME);
+        FC_V_probing_timer = get_millis();
+    }
+
     if (purge_in_process)
     {
         switch (purge_step)
@@ -49,7 +69,7 @@ void fc_purge()
                     gpio_set_level(MOSFET_PIN, 1);
                     purge_step++;
                     purge_timer = get_millis();
-                    pwm_set_current_control_duty_cycle(0);
+                    pwm_set_current_control_duty_cycle(0); // possibly deprecated
                     // return;
                 }
                 break;
@@ -80,122 +100,95 @@ void fc_purge()
                 gpio_set_level(PURGE_VALVE_PIN, 0);
                 purge_step = 0;
                 purge_in_process = 0;
-                pwm_set_current_control_duty_cycle(100);
+                pwm_set_current_control_duty_cycle(100); // possibly deprecated
                 break;
         }
     }
-    /*if (purge_step == 1 && purge_timer > PURGE_DURATION_MS)
-    {
-        gpio_set_level(PURGE_VALVE_PIN, 0);
-        purge_step++;
-        purge_timer = get_millis();
-        // return;
-    }*/
-
-    /* if (purge_step == 2 && purge_timer > PURGE_MOSFET_DELAY_MS)
-     {
-         gpio_set_level(PURGE_VALVE_PIN, 0);
-         gpio_set_level(MOSFET_PIN, 1);
-         purge_step++;
-         purge_timer = get_millis();
-         // return;
-     }*/
-
-    /*if (purge_step == 3 && purge_timer > MOSFET_SHORT_DURATION_MS)
-    {
-        gpio_set_level(MOSFET_PIN, 0);
-        purge_step++;
-        purge_timer = get_millis();
-    }*/
-
-    /*if (purge_step == 4 && purge_timer > MOSFET_SHORT_INTERVAL_MS)
-    {
-        gpio_set_level(MOSFET_PIN, 0);
-        purge_step++;
-        purge_timer = get_millis();
-    }
-
-    if (purge_step == 5 && purge_timer > MOSFET_SHORT_DURATION_MS)
-    {
-        gpio_set_level(MOSFET_PIN, 0);
-        purge_step++;
-        purge_timer = get_millis();
-    }
-
-    if (purge_step == 6 && purge_timer > MOSFET_SHORT_INTERVAL_MS)
-    {
-        gpio_set_level(MOSFET_PIN, 0);
-        purge_step++;
-        purge_timer = get_millis();
-    }
-
-    if (purge_step == 7 && purge_timer > MOSFET_SHORT_DURATION_MS)
-    {
-        gpio_set_level(MOSFET_PIN, 0);
-        gpio_set_level(PURGE_VALVE_PIN, 0);
-        purge_step = 0;
-        purge_in_process = 0;
-    }
-}
-else
-{
-    purge_valve = 0;
-    mosfet = 0;
-}*/
-}
-
-void fc_on_loop()
-{
-    /*TEST*/ /*main_valve = 1;
-    purge_valve = 1;
-    fan_gnd_duty_cycle_percent = 1;
-    fan_PWM_duty_cycle_percent = 30; // testy 3s ????*/
-
-    // fc_on_loop(); *************************
-
-    // Fan gnd control
-    // pwm_set_gnd_duty_cycle(fan_gnd_duty_cycle_percent);
-
-    /*Fan_PWM_control*/ // pwm_set_pwm_duty_cycle(fan_PWM_duty_cycle_percent);
-    // TEST end
-
-    // przestarzałe:
-    //  How to control PEM fuel cell?
-    //  power main valve, power fans, measure voltage, measure temperature,
-    //  if temperature is rising from 40*C give higher PWM proportional to temp, if maksimum temp 65*C turn off fuel
-    //  cell and give flag if voltage falling down in time about 1 min turn purge valve and mosfet on about 1ms , if
-    //  voltage to low 15V turn off and give flag
-
-    if (button_state_value /*_average*/ > 2.9 && previous_button_state_value < 2.9)
-    {
-        fan_toggle = !fan_toggle;
-        if (fan_toggle == 0)
-        {
-            main_valve = 0;
-            fan_gnd_duty_cycle_percent = 0;
-            fan_PWM_duty_cycle_percent = 0;
-            printf("main off\n");
-            gpio_set_level(MAIN_VALVE_PIN, 0);
-        }
-        else
-        {
-            main_valve = 1;
-            fan_gnd_duty_cycle_percent = 100;
-            fan_PWM_duty_cycle_percent = 100;
-            gpio_set_level(MAIN_VALVE_PIN, 1);
-            printf("main on\n");
-        }
-        // fan_toggle = !fan_toggle;
-    }
     else
     {
-        // Przedmuchy
-        if (button_state_value > 0.9 && button_state_value < 1.2 && (previous_button_state_value < 0.9))
+        if (FC_V_buffer[(FC_V_buffer_current_idx - 1 + FC_V_PROBING_FREQUENCY * FC_V_PROBING_TIME)
+                        % FC_V_PROBING_FREQUENCY * FC_V_PROBING_TIME]
+                - FC_V_buffer[FC_V_buffer_current_idx]
+            >= FC_V_PURGE_TRIGGER_DIFFERENCE)
         {
             purge_in_process = 1;
         }
     }
-    fan_toggle = 1;
+}
+
+void fc_on_loop()
+{
+    // startup
+    if (!fc_on && gpio_get_level(EMERGENCY_BUTTON_PIN) == 0)
+    {
+        fan_toggle_trigger = 1;
+        pwm_set_pwm_duty_cycle(100);
+        pwm_set_gnd_duty_cycle(100);
+        vTaskDelay(700 / portTICK_PERIOD_MS); // TODO: make a timer
+        gpio_set_level(MAIN_VALVE_PIN, 1);
+        fc_on = 1;
+    }
+
+    // emergency button press
+    if (fc_on && gpio_get_level(EMERGENCY_BUTTON_PIN) == 1)
+    {
+        pwm_set_pwm_duty_cycle(100);
+        pwm_set_gnd_duty_cycle(100);
+        gpio_set_level(MAIN_VALVE_PIN, 0);
+        while (V_FC_value > 3.0)
+            ; // TODO: find correct value
+        pwm_set_pwm_duty_cycle(0);
+        pwm_set_gnd_duty_cycle(0);
+        fc_on = 0;
+        fan_toggle_trigger = 1;
+    }
+
+    // supercapacitor or fuel cell emergency
+    float SC_V_value = 48.0; // TODO: implement reading and handling SC_V
+    if (SC_V_value < SC_MINIMAL_VOLTAGE || V_FC_value < FC_MINIMAL_VOLTAGE)
+    {
+        gpio_set_level(MAIN_VALVE_PIN, 0);
+        pwm_set_pwm_duty_cycle(100);
+        pwm_set_gnd_duty_cycle(100);
+        while (V_FC_value > 3.0)
+            ; // TODO: find correct value
+        pwm_set_pwm_duty_cycle(0);
+        pwm_set_gnd_duty_cycle(0);
+        fc_on = 0;
+        fan_toggle = 0;
+    }
+
+    // probably deprecated
+    /*if (fc_on && fan_toggle_trigger button_state_value > 2.9 && previous_button_state_value < 2.9)
+     {
+         fan_toggle_trigger = 0;
+         fan_toggle = !fan_toggle;
+         if (fan_toggle == 0)
+         {
+             main_valve_toggle = 0;
+             fan_gnd_duty_cycle_percent = 0;
+             fan_PWM_duty_cycle_percent = 0;
+             gpio_set_level(MAIN_VALVE_PIN, 0);
+         }
+         else
+         {
+             main_valve_toggle = 1;
+             fan_gnd_duty_cycle_percent = 100;
+             fan_PWM_duty_cycle_percent = 100;
+             gpio_set_level(MAIN_VALVE_PIN, 1);
+         }
+     }
+     else
+     {
+         // Force purge trigger
+         if (button_state_value > 0.9 && button_state_value < 1.2 && (previous_button_state_value < 0.9))
+         {
+             purge_in_process = 1;
+         }
+         // deprecated??
+     }
+     // fan_toggle = 1;*/
+
     if (fan_toggle == 1)
     {
         if (T_value > 55)
@@ -204,38 +197,15 @@ void fc_on_loop()
         }
         else if (T_value > 40)
         {
-            fan_PWM_duty_cycle_percent = T_value - 10; // T_value _average - (-30) 10; // If you have simple 2 wire
+            fan_PWM_duty_cycle_percent = (int) (T_value - 10);
         }
         else
         {
             fan_PWM_duty_cycle_percent = 0;
         }
-
-        pwm_set_pwm_duty_cycle(fan_PWM_duty_cycle_percent);
-        pwm_set_gnd_duty_cycle(100);
     }
-    // pwm_set_gnd_duty_cycle(100);
-
-    /* for (int i = 0; i <= 100; i++)
-     {
-         pwm_set_pwm_duty_cycle(100 * i % 2);
-         vTaskDelay(5000 / portTICK_PERIOD_MS);
-     }*/
-    /* for (int i = 0; i < 100; i++)
-     {
-         pwm_set_pwm_duty_cycle(i);
-         vTaskDelay(1000 / portTICK_PERIOD_MS);
-     }*/
-    // pwm_set_pwm_duty_cycle(75);
-    /* if (T_value > 70)
-     {
-    0
-         fan_gnd_duty_cycle_percent = 0;
-         fan_PWM_duty_cycle_percent = 0;
-         gpio_set_level(MAIN_VALVE_PIN, 0);
-         gpio_set_level(PURGE_VALVE_PIN, 0);
-         gpio_set_level(MOSFET_PIN, 0);
-     }*/
+    pwm_set_pwm_duty_cycle((int) fan_toggle * fan_PWM_duty_cycle_percent);
+    pwm_set_gnd_duty_cycle((int) fan_toggle * fan_gnd_duty_cycle_percent);
 
     fc_purge();
 }

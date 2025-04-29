@@ -26,10 +26,11 @@
 #include "hal/mcpwm_types.h"
 
 // *** Pinout ***
-#define MAIN_VALVE_PIN  37 // 37
-#define PURGE_VALVE_PIN 7  // 7
-#define MOSFET_PIN      11 // 11
-#define LED_PIN         33 // 33 led CAN Status
+#define MAIN_VALVE_PIN       37 // 37
+#define PURGE_VALVE_PIN      7  // 7
+#define MOSFET_PIN           11 // 11
+#define LED_PIN              33 // 33 led CAN Status
+#define EMERGENCY_BUTTON_PIN 40 // random
 
 void gpio_init(void);
 void gpio_on_loop(void);

@@ -9,12 +9,12 @@
 #include "esp_log.h"
 #include "driver/gpio.h"
 #include "driver/twai.h"
-
+#include "timer.h"
 // #include "global.h"
 #include "can.h"
 #include "can_ids/can_ids.h"
 
-void can_initialize()
+void can_init()
 {
     // Initialize configuration structures using macro initializers
     twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(GPIO_NUM_39, GPIO_NUM_40, TWAI_MODE_NORMAL);
@@ -54,9 +54,9 @@ void can_send()
         .self = 0,         // Whether the message is a self reception request (loopback)
         .dlc_non_comp = 0, // DLC is less than 8
         // Message ID and payload
-        .identifier = CAN_ID_FUEL_CELL_TEMPERATURE,
-        .data_length_code = 2,
-        .data = { 0, 1, 2, 3 },
+        .identifier = CAN_ID_VEHICLE_SPEED,
+        .data_length_code = 1,
+        .data = { (uint8_t) (get_millis() % 40) },
     };
 
     // Queue message for transmission
