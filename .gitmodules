@@ -4,3 +4,6 @@
 [submodule "main/peripherials/can_ids"]
 	path = main/peripherials/can_ids
 	url = https://github.com/HydrogreenPollub/can_ids
+[submodule "components/bmx280"]
+	path = components/bmx280
+	url = https://github.com/utkumaden/esp-idf-bmx280.git
