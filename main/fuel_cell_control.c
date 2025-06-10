@@ -8,7 +8,7 @@
 bool main_valve_toggle = 0; // ================= ustawienie zaworu zasilajacego _ main valve n-mosfet (1 on, 0 off)
 bool purge_valve = 0;       // ================= ustawienie przedmuchu - purge valve n-mosfet (1 on, 0 off)
 bool mosfet_toggle = 0;     // ================= ustawienie zwarcia mosfet - driver i n-mosfet (1 on, 0 off)
-bool fc_on = 0;
+bool fc_on = 0;             //================== ustawienie ogniwa w trb pracy
 bool fan_toggle_trigger = 0;
 
 float FC_V_buffer[FC_V_PROBING_TIME * FC_V_PROBING_FREQUENCY] = { 0 };
@@ -32,7 +32,7 @@ void fc_init()
 }
 
 void fc_purge()
-{
+{ // Przy spadku napięcia
     if (get_millis() - FC_V_probing_timer > 1000.0 / FC_V_PROBING_FREQUENCY)
     {
         FC_V_buffer[FC_V_buffer_current_idx] = V_FC_value;
@@ -101,6 +101,8 @@ void fc_purge()
                 purge_step = 0;
                 purge_in_process = 0;
                 pwm_set_current_control_duty_cycle(100); // possibly deprecated
+                    gpio_set_level(LED_PIN, 1);
+
                 break;
         }
     }
@@ -113,13 +115,17 @@ void fc_purge()
         {
             purge_in_process = 1;
         }
+        gpio_set_level(LED_PIN, 0);
+
     }
 }
 
 void fc_on_loop()
-{
+{   
+    //blink led
+    gpio_set_level(LED_PIN, 0);
     // startup
-    if (!fc_on && gpio_get_level(EMERGENCY_BUTTON_PIN) == 0)
+    if (!fc_on && gpio_get_level(EMERGENCY_BUTTON_PIN) == 1) // 0
     {
         fan_toggle_trigger = 1;
         pwm_set_pwm_duty_cycle(100);
@@ -143,61 +149,62 @@ void fc_on_loop()
         fan_toggle_trigger = 1;
     }
 
-    // supercapacitor or fuel cell emergency
-    float SC_V_value = 48.0; // TODO: implement reading and handling SC_V
-    if (SC_V_value < SC_MINIMAL_VOLTAGE || V_FC_value < FC_MINIMAL_VOLTAGE)
+    // ERROR
+    //  supercapacitor or fuel cell emergency
+    if (V_SC_value < SC_MINIMAL_VOLTAGE || V_FC_value < FC_MINIMAL_VOLTAGE)
     {
-        gpio_set_level(MAIN_VALVE_PIN, 0);
+        // test
+        gpio_set_level(LED_PIN, 1);
+        gpio_set_level(MAIN_VALVE_PIN, 0); // close main valve and stop fuel cell
         pwm_set_pwm_duty_cycle(100);
         pwm_set_gnd_duty_cycle(100);
-        while (V_FC_value > 3.0)
-            ; // TODO: find correct value
-        pwm_set_pwm_duty_cycle(0);
-        pwm_set_gnd_duty_cycle(0);
+
         fc_on = 0;
-        fan_toggle = 0;
+        fan_toggle = 0; //??? ?
     }
 
     // probably deprecated
-    /*if (fc_on && fan_toggle_trigger button_state_value > 2.9 && previous_button_state_value < 2.9)
-     {
-         fan_toggle_trigger = 0;
-         fan_toggle = !fan_toggle;
-         if (fan_toggle == 0)
-         {
-             main_valve_toggle = 0;
-             fan_gnd_duty_cycle_percent = 0;
-             fan_PWM_duty_cycle_percent = 0;
-             gpio_set_level(MAIN_VALVE_PIN, 0);
-         }
-         else
-         {
-             main_valve_toggle = 1;
-             fan_gnd_duty_cycle_percent = 100;
-             fan_PWM_duty_cycle_percent = 100;
-             gpio_set_level(MAIN_VALVE_PIN, 1);
-         }
-     }
-     else
-     {
-         // Force purge trigger
-         if (button_state_value > 0.9 && button_state_value < 1.2 && (previous_button_state_value < 0.9))
-         {
-             purge_in_process = 1;
-         }
-         // deprecated??
-     }
-     // fan_toggle = 1;*/
+    if (fc_on && fan_toggle_trigger /* button_state_value*/ > 2.9 && previous_button_state_value < 2.9)
+    {
+        fan_toggle_trigger = 0;
+        fan_toggle = !fan_toggle;
+        if (fan_toggle == 0)
+        {
+            main_valve_toggle = 0;
+            fan_gnd_duty_cycle_percent = 0;
+            fan_PWM_duty_cycle_percent = 0;
+            gpio_set_level(MAIN_VALVE_PIN, 0);
+        }
+        else
+        {
+            main_valve_toggle = 1;
+            fan_gnd_duty_cycle_percent = 100;
+            fan_PWM_duty_cycle_percent = 100;
+            gpio_set_level(MAIN_VALVE_PIN, 1);
+        }
+    }
+    else
+    {
+        // Force purge trigger
+        if (button_state_value > 0.9 && button_state_value < 1.2 && (previous_button_state_value < 0.9))
+        {
+            purge_in_process = 1;
+        }
+        // deprecated??
+    }
+    // fan_toggle = 1;*/
 
     if (fan_toggle == 1)
     {
-        if (T_value > 55)
+        if (T_value > 38) // 55
         {
-            fan_PWM_duty_cycle_percent = (int) (T_value * 1.5);
+            // fan_PWM_duty_cycle_percent = (int) (T_value * 1.5);
+            fan_gnd_duty_cycle_percent = (int) (T_value * 1.5);
         }
-        else if (T_value > 40)
+        else if (T_value > 30) // 40
         {
-            fan_PWM_duty_cycle_percent = (int) (T_value - 10);
+            // fan_PWM_duty_cycle_percent = (int) (T_value - 10);
+            fan_gnd_duty_cycle_percent = (int) (T_value - 10);
         }
         else
         {
@@ -208,4 +215,10 @@ void fc_on_loop()
     pwm_set_gnd_duty_cycle((int) fan_toggle * fan_gnd_duty_cycle_percent);
 
     fc_purge();
+
+    // TEST
+     pwm_set_pwm_duty_cycle(50);
+     pwm_set_gnd_duty_cycle(100);
+
+    vTaskDelay(10 / portTICK_PERIOD_MS); // todo crate xtask
 }

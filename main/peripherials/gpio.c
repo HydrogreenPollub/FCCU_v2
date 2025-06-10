@@ -29,11 +29,12 @@ void enable_configuration()
 
 void gpio_init()
 {
-    // gpio_set_level(LED_PIN, led_state);
+    gpio_set_direction(LED_PIN, GPIO_MODE_OUTPUT);
     gpio_set_direction(PURGE_VALVE_PIN, GPIO_MODE_OUTPUT);
     gpio_set_direction(MOSFET_PIN, GPIO_MODE_OUTPUT);
     gpio_set_direction(MAIN_VALVE_PIN, GPIO_MODE_OUTPUT);
     gpio_set_level(MAIN_VALVE_PIN, 0);
     gpio_set_level(PURGE_VALVE_PIN, 0);
     gpio_set_level(MOSFET_PIN, 0);
+    gpio_set_level(LED_PIN, 1);
 }

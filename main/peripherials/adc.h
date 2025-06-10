@@ -26,22 +26,25 @@
 #include "hal/mcpwm_types.h"
 
 // ADC channels
-#define ADC_12V_CHANNEL          ADC_CHANNEL_2 // GPIO 13, ADC 2, IO 4 CH 2
-#define ADC_V_FC_CHANNEL         ADC_CHANNEL_3 // GPIO 4, ADC 1 CH 3
-#define ADC_T_CHANNEL            ADC_CHANNEL_1 // GPIO 2, ADC 1 CH 1
-#define ADC_P_CHANNEL            ADC_CHANNEL_2 // GPIO 3, ADC 1 CH 2
-#define ADC_BUTTON_STATE_CHANNEL ADC_CHANNEL_2 // I/O 4 -- GPIO 13 ADC 2 CH 2
+#define ADC_V_USB_CHANNEL        ADC_CHANNEL_3 // GPIO 13,ADC 2, CH 3 V USB // test & add coefficients
+#define ADC_V_FC_CHANNEL         ADC_CHANNEL_7 // GPIO 4, ADC 1 CH 7
+#define ADC_T_CHANNEL            ADC_CHANNEL_9 // GPIO 2, ADC 1 CH 1
+#define ADC_P_CHANNEL            ADC_CHANNEL_4 // GPIO 3, ADC 1 CH 6 LP1
+#define ADC_BUTTON_STATE_CHANNEL ADC_CHANNEL_0 // GPIO 13 ADC 2 CH 0 //G11 test MCU button on pcb // todo
 #define ADC_CURRENT_FLOW_CHANNEL ADC_CHANNEL_6 // GPIO 7, ADC1 CH 4
+#define ADC_V_SC_CHANNEL         ADC_CHANNEL_8 // GPIO 4, ADC 1 CH 8 // test
 // #define ADC_MCU_TEST_CHANNEL   ADC_CHANNEL_1 // MCU test GPIO 1, ADC 1 CH 0
 
+#define ADC_V_USB_SAMPLES_COUNT        10
 #define ADC_V_FC_SAMPLES_COUNT         32
 #define ADC_T_SAMPLES_COUNT            32
 #define ADC_P_SAMPLES_COUNT            32
-#define ADC_BUTTON_SAMPLES_COUNT       1
+#define ADC_BUTTON_SAMPLES_COUNT       1 // test new capacitor and change to simple IO
 #define ADC_CURRENT_FLOW_SAMPLES_COUNT 32
+#define ADC_V_SC_SAMPLES_COUNT         32
 
-#define ADC_60V_VOLTAGE_COEFF_COUNT  11
-#define ADC_3V3_VOLTAGE_COEFF_COUNT  11
+#define ADC_60V_VOLTAGE_COEFF_COUNT  4
+#define ADC_3V3_VOLTAGE_COEFF_COUNT  6
 #define ADC_TEMPERATURE_COEFF_COUNT  2
 #define ADC_CURRENT_FLOW_COEFF_COUNT 3
 
@@ -66,8 +69,15 @@ extern float previous_button_state_value;
 extern bool button_state;
 extern bool previous_button_state;
 
+extern float V_SC_filtered_raw;
+extern float V_SC_value;
+
+extern float V_USB_filtered_raw;
+extern float V_USB_value;
+
 float adc_map(float x, float in_min, float in_max, float out_min, float out_max);
-float adc_apply_calibration(float coefficients[], uint8_t coeff_count, int adc_raw);
+float adc_apply_calibration(float coefficients[], uint8_t coeff_count, float adc_raw_sample); 
+//float adc_apply_calibration(float coefficients[], uint8_t coeff_count, int adc_raw);//old
 
 void adc_on_loop();
 void adc_init();

@@ -34,9 +34,9 @@ void app_main()
     gpio_init();
     adc_init();
     pwm_init();
-    can_init();
+    //can_init(); //error braki
     // uart_init();
-    //  console_init();
+    console_init();
     //  temp
     //  pwm_set_pwm_duty_cycle(0);
     while (1)
@@ -51,6 +51,6 @@ void app_main()
         //   TickType_t timeout = 100;
         //   uart_receive_data(buffer, length, timeout);
         //  can_recieve();
-        vTaskDelay(10 / portTICK_PERIOD_MS);
+        //vTaskDelay(10 / portTICK_PERIOD_MS);
     }
 }

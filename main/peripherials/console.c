@@ -10,13 +10,14 @@
 
 #include "adc.h"
 
-#define LED_PIN 33 // 33 led CAN Status
+#define LED_PIN 12 // 12 led Status
 bool led_state = true;
 uint8_t buffer_tx[64];
 
 bool is_led_enabled = true;
 bool is_serial_output_enabled = true;
 
+// Commands todo for mesuremts and test in lab
 void console_parse_command(commands_t command)
 {
     switch (command)
@@ -59,13 +60,13 @@ void console_parse_command(commands_t command)
 void console_print_logs()
 {
     sprintf((char*) buffer_tx,
-        "%2.3f,\t"
+       
         "%2.3f,\t"
         "%2.3f,\t"
         "%2.3f,\t"
         "%2.3f,\t"
         "%2.3f\n\r",
-        V_FC_filtered_raw, V_FC_value, T_value, P_value, button_state_value, current_flow_value);
+        V_FC_value, V_SC_value, V_USB_value, T_value, P_value);
 
     // uart_write_bytes(CONSOLE_UART_NUM, (const char*) buffer_tx, strlen((char*) buffer_tx));
     printf((const char*) buffer_tx);
@@ -84,8 +85,8 @@ void console_tx_task(void* pvParameters)
 
         // if (is_led_enabled)
         // {
-        led_state = !(led_state);
-        gpio_set_level(LED_PIN, led_state);
+        //led_state = !(led_state);
+        //gpio_set_level(LED_PIN, led_state);
         // }
         // else
         // {

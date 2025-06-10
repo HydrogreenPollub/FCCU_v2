@@ -26,13 +26,13 @@
 #include "hal/mcpwm_types.h"
 
 // Fans
-#define FAN_GND_PIN 8 // Simple fan have 2 wires and with it we need to use PWM on FAN_GND_PIN
+#define FAN_GND_PIN 38 //fan on // Simple fan have 2 wires and with it we need to use PWM on FAN_GND_PIN
 
 // More complex fans with 3 or 4 wires need to set PWM and have power all the time (A lot of fans starts turning
 // without PWM when power is ON)
-#define FAN_PWM_PIN 45
+#define FAN_PWM_PIN 37 //pwm pin
 
-#define CURRENT_CONTROL_PIN 48
+#define CURRENT_CONTROL_PIN 18 //driver curent control mosfet pwm
 
 // frequncy of clock (each tick)
 // 2.5 MHz -> 40 ns

@@ -12,7 +12,7 @@
 #include "timer.h"
 // #include "global.h"
 #include "can.h"
-#include "can_ids/can_ids.h"
+//#include "can_ids/can_ids.h" //brak
 
 void can_init()
 {
@@ -54,7 +54,7 @@ void can_send()
         .self = 0,         // Whether the message is a self reception request (loopback)
         .dlc_non_comp = 0, // DLC is less than 8
         // Message ID and payload
-        .identifier = CAN_ID_VEHICLE_SPEED,
+        .identifier = 1,//CAN_ID_VEHICLE_SPEED,
         .data_length_code = 1,
         .data = { (uint8_t) (get_millis() % 40) },
     };
