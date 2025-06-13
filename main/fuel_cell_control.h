@@ -27,8 +27,8 @@
 
 #define PURGE_DURATION_MS             300 //0,3s
 #define PURGE_MOSFET_DELAY_MS         5000  // 5s
-#define MOSFET_SHORT_DURATION_MS      15    // 15ms
-#define MOSFET_SHORT_INTERVAL_MS      40    // 40ms
+#define MOSFET_SHORT_DURATION_MS      25    // 15ms
+#define MOSFET_SHORT_INTERVAL_MS      50    // 40ms
 #define FC_V_PROBING_TIME             60    // 60s, 1 minute na spadek napiecia o trigger difference
 #define FC_V_PROBING_FREQUENCY        1  // 1Hz, 1s per sample
 #define FC_V_PURGE_TRIGGER_DIFFERENCE 5.0 //spadek napiecia ogniwa inicjujący przedmuch

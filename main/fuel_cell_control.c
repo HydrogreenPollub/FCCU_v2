@@ -19,16 +19,17 @@ bool fan_toggle = 0;
 bool purge_in_process = 0;
 int purge_step = 0;
 
+uint64_t purge_inner_timer;
 uint64_t purge_timer;
-
 void fc_init()
 {
     for (int i = 0; i < FC_V_PROBING_TIME * FC_V_PROBING_FREQUENCY; i++)
     {
         FC_V_buffer[i] = 0;
     }
-    purge_timer = get_millis();
+    purge_inner_timer = get_millis();
     FC_V_probing_timer = get_millis();
+    purge_timer = get_millis();
 }
 
 void fc_purge()
@@ -49,26 +50,26 @@ void fc_purge()
                 gpio_set_level(PURGE_VALVE_PIN, 1);
                 printf("%lld\t%d\n", get_millis(), purge_step);
                 purge_step++;
-                purge_timer = get_millis();
+                purge_inner_timer = get_millis();
                 break;
             case 1:
-                if (get_millis() - purge_timer >= PURGE_DURATION_MS)
+                if (get_millis() - purge_inner_timer >= PURGE_DURATION_MS)
                 {
                     printf("%lld\t%d\n", get_millis(), purge_step);
                     gpio_set_level(PURGE_VALVE_PIN, 0);
                     purge_step++;
-                    purge_timer = get_millis();
+                    purge_inner_timer = get_millis();
                     // return;
                 }
                 break;
             case 2:
-                if (get_millis() - purge_timer >= PURGE_MOSFET_DELAY_MS)
+                if (get_millis() - purge_inner_timer >= PURGE_MOSFET_DELAY_MS)
                 {
                     printf("%lld\t%d\n", get_millis(), purge_step);
                     gpio_set_level(PURGE_VALVE_PIN, 0);
                     gpio_set_level(MOSFET_PIN, 1);
                     purge_step++;
-                    purge_timer = get_millis();
+                    purge_inner_timer = get_millis();
                     pwm_set_current_control_duty_cycle(0); // possibly deprecated
                     // return;
                 }
@@ -76,22 +77,22 @@ void fc_purge()
             case 3:
             case 5:
             case 7:
-                if (get_millis() - purge_timer >= MOSFET_SHORT_DURATION_MS)
+                if (get_millis() - purge_inner_timer >= MOSFET_SHORT_DURATION_MS)
                 {
                     printf("%lld\t%d\n", get_millis(), purge_step);
                     gpio_set_level(MOSFET_PIN, 0);
                     purge_step++;
-                    purge_timer = get_millis();
+                    purge_inner_timer = get_millis();
                 }
                 break;
             case 4:
             case 6:
-                if (get_millis() - purge_timer >= MOSFET_SHORT_INTERVAL_MS)
+                if (get_millis() - purge_inner_timer >= MOSFET_SHORT_INTERVAL_MS)
                 {
                     printf("%lld\t%d\n", get_millis(), purge_step);
                     gpio_set_level(MOSFET_PIN, 1);
                     purge_step++;
-                    purge_timer = get_millis();
+                    purge_inner_timer = get_millis();
                 }
                 break;
             default:
@@ -100,30 +101,30 @@ void fc_purge()
                 gpio_set_level(PURGE_VALVE_PIN, 0);
                 purge_step = 0;
                 purge_in_process = 0;
+                purge_timer = get_millis();
                 pwm_set_current_control_duty_cycle(100); // possibly deprecated
-                    gpio_set_level(LED_PIN, 1);
+                gpio_set_level(LED_PIN, 1);
 
                 break;
         }
     }
     else
     {
-        if (FC_V_buffer[(FC_V_buffer_current_idx - 1 + FC_V_PROBING_FREQUENCY * FC_V_PROBING_TIME)
+       /* if (FC_V_buffer[(FC_V_buffer_current_idx - 1 + FC_V_PROBING_FREQUENCY * FC_V_PROBING_TIME)
                         % FC_V_PROBING_FREQUENCY * FC_V_PROBING_TIME]
                 - FC_V_buffer[FC_V_buffer_current_idx]
             >= FC_V_PURGE_TRIGGER_DIFFERENCE)
         {
             purge_in_process = 1;
-        }
-        gpio_set_level(LED_PIN, 0);
-
+        }*/
+       // gpio_set_level(LED_PIN, 0);
     }
 }
 
 void fc_on_loop()
-{   
-    //blink led
-    gpio_set_level(LED_PIN, 0);
+{
+    // blink led
+    /*gpio_set_level(LED_PIN, 0);
     // startup
     if (!fc_on && gpio_get_level(EMERGENCY_BUTTON_PIN) == 1) // 0
     {
@@ -164,7 +165,7 @@ void fc_on_loop()
     }
 
     // probably deprecated
-    if (fc_on && fan_toggle_trigger /* button_state_value*/ > 2.9 && previous_button_state_value < 2.9)
+    if (fc_on && fan_toggle_trigger  > 2.9 && previous_button_state_value < 2.9)
     {
         fan_toggle_trigger = 0;
         fan_toggle = !fan_toggle;
@@ -192,7 +193,7 @@ void fc_on_loop()
         }
         // deprecated??
     }
-    // fan_toggle = 1;*/
+    // fan_toggle = 1;
 
     if (fan_toggle == 1)
     {
@@ -213,12 +214,16 @@ void fc_on_loop()
     }
     pwm_set_pwm_duty_cycle((int) fan_toggle * fan_PWM_duty_cycle_percent);
     pwm_set_gnd_duty_cycle((int) fan_toggle * fan_gnd_duty_cycle_percent);
+*/
 
+    if (get_millis() - purge_timer > 2 * 60 * 1000)
+    {
+        purge_in_process = 1;
+    }
     fc_purge();
-
     // TEST
-     pwm_set_pwm_duty_cycle(50);
-     pwm_set_gnd_duty_cycle(100);
+    pwm_set_pwm_duty_cycle(50);
+    pwm_set_gnd_duty_cycle(100);
 
     vTaskDelay(10 / portTICK_PERIOD_MS); // todo crate xtask
 }

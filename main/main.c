@@ -19,7 +19,7 @@
 #include "adc.h"
 #include "gpio.h"
 #include "pwm.h"
-#include "console.h"
+//#include "console.h"
 #include "timer.h"
 #include "can.h"
 #include "uart.h"
@@ -36,7 +36,7 @@ void app_main()
     pwm_init();
     //can_init(); //error braki
     // uart_init();
-    console_init();
+   // console_init();
     //  temp
     //  pwm_set_pwm_duty_cycle(0);
     while (1)
